@@ -43,3 +43,9 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Hide Backend Environment & Keys
+skill_pathway_backend/.env
+skill_pathway_backend/*.env
+skill_pathway_backend/node_modules/
+skill_pathway_backend/.env.local
