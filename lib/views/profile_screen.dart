@@ -1,0 +1,369 @@
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'auth_screen.dart';
+
+class ProfileScreen extends StatefulWidget {
+  final String userId;
+
+  const ProfileScreen({super.key, required this.userId});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  bool isLoading = true;
+
+  String fullName = "Anas Jamil";
+  String careerGoal = "Flutter Developer";
+  String email = "";
+  Uint8List? avatarBytes;
+  String? avatarUrl;
+
+  final Color primaryNavy = const Color(0xFF1E1B4B);
+  final Color accentPurple = const Color(0xFF4F46E5);
+  final Color textDark = const Color(0xFF0F172A);
+  final Color textMuted = const Color(0xFF64748B);
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchProfileData();
+  }
+
+  Future<void> _fetchProfileData() async {
+    try {
+      final supabase = Supabase.instance.client;
+      final authUser = supabase.auth.currentUser;
+      email = authUser?.email ?? "";
+
+      final response = await supabase
+          .from('profiles')
+          .select()
+          .eq('id', widget.userId)
+          .maybeSingle();
+
+      if (response != null) {
+        setState(() {
+          fullName = response['full_name'] ?? authUser?.userMetadata?['full_name'] ?? "Anas Jamil";
+          careerGoal = response['career_goal'] ?? "Flutter Developer";
+
+          if (response['avatar_url'] != null && response['avatar_url'].toString().isNotEmpty) {
+            final String rawAvatar = response['avatar_url'].toString();
+            if (rawAvatar.startsWith('http')) {
+              avatarUrl = rawAvatar;
+            } else {
+              try {
+                avatarBytes = base64Decode(rawAvatar);
+              } catch (_) {
+                avatarUrl = rawAvatar;
+              }
+            }
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint("Error fetching profile: $e");
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+  void _handleLogout() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text("Logout", style: TextStyle(fontWeight: FontWeight.bold, color: textDark)),
+        content: Text("Are you sure you want to sign out?", style: TextStyle(color: textMuted)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text("Cancel", style: TextStyle(color: textMuted, fontWeight: FontWeight.w600)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              elevation: 0,
+            ),
+            onPressed: () async {
+              Navigator.pop(context);
+              await Supabase.instance.client.auth.signOut();
+              if (mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AuthScreen()),
+                  (route) => false,
+                );
+              }
+            },
+            child: const Text("Logout", style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditProfileDialog() {
+    final nameController = TextEditingController(text: fullName);
+    final goalController = TextEditingController(text: careerGoal);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      backgroundColor: Colors.white,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          top: 20,
+          left: 20,
+          right: 20,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(color: const Color(0xFFCBD5E1), borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text("Edit Profile Details", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textDark)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: nameController,
+              decoration: InputDecoration(
+                labelText: "Full Name",
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: goalController,
+              decoration: InputDecoration(
+                labelText: "Target Career Goal",
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryNavy,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                onPressed: () async {
+                  final newName = nameController.text.trim();
+                  final newGoal = goalController.text.trim();
+
+                  if (newName.isNotEmpty) {
+                    try {
+                      await Supabase.instance.client
+                          .from('profiles')
+                          .update({'full_name': newName, 'career_goal': newGoal})
+                          .eq('id', widget.userId);
+
+                      setState(() {
+                        fullName = newName;
+                        careerGoal = newGoal;
+                      });
+
+                      if (mounted) Navigator.pop(context);
+                    } catch (e) {
+                      debugPrint("Update profile error: $e");
+                    }
+                  }
+                },
+                child: const Text("Save Changes", style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF1E293B)),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text("My Profile", style: TextStyle(color: primaryNavy, fontWeight: FontWeight.bold, fontSize: 18)),
+        centerTitle: true,
+      ),
+      body: isLoading
+          ? Center(child: CircularProgressIndicator(color: accentPurple))
+          : SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Center(
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 480),
+                  child: Column(
+                    children: [
+                      // --- PROFILE HEADER CARD ---
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Column(
+                          children: [
+                            CircleAvatar(
+                              radius: 42,
+                              backgroundColor: const Color(0xFFEEF2FF),
+                              backgroundImage: avatarBytes != null
+                                  ? MemoryImage(avatarBytes!)
+                                  : (avatarUrl != null
+                                      ? NetworkImage(avatarUrl!)
+                                      : const NetworkImage('https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150')) as ImageProvider,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(fullName, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textDark)),
+                            const SizedBox(height: 2),
+                            Text(careerGoal, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: accentPurple)),
+                            if (email.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(email, style: TextStyle(fontSize: 13, color: textMuted)),
+                            ],
+                            const SizedBox(height: 16),
+                            OutlinedButton.icon(
+                              onPressed: _showEditProfileDialog,
+                              icon: const Icon(Icons.edit_outlined, size: 16),
+                              label: const Text("Edit Profile"),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: primaryNavy,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                side: const BorderSide(color: Color(0xFFCBD5E1)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // --- STATS OVERVIEW ---
+                      Row(
+                        children: [
+                          _buildStatCard("3", "Applications", Icons.assignment_outlined),
+                          const SizedBox(width: 12),
+                          _buildStatCard("82%", "Skill Match", Icons.track_changes_outlined),
+                          const SizedBox(width: 12),
+                          _buildStatCard("5", "Courses", Icons.school_outlined),
+                        ],
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // --- MENU OPTIONS ---
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Column(
+                          children: [
+                            _buildMenuItem(Icons.person_outline_rounded, "Personal Information", _showEditProfileDialog),
+                            const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                            _buildMenuItem(Icons.description_outlined, "My Resume / CV", () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("Resume section opens")),
+                              );
+                            }),
+                            const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                            _buildMenuItem(Icons.bookmark_outline_rounded, "Saved Opportunities", () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("Saved items list")),
+                              );
+                            }),
+                            const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                            _buildMenuItem(Icons.settings_outlined, "Settings & Preferences", () {}),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // --- LOGOUT BUTTON ---
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton.icon(
+                          onPressed: _handleLogout,
+                          icon: const Icon(Icons.logout_rounded, size: 18),
+                          label: const Text("Sign Out", style: TextStyle(fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFEF2F2),
+                            foregroundColor: const Color(0xFFEF4444),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            side: const BorderSide(color: Color(0xFFFCA5A5)),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 30),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+    );
+  }
+
+  Widget _buildStatCard(String value, String label, IconData icon) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: accentPurple, size: 22),
+            const SizedBox(height: 6),
+            Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textDark)),
+            const SizedBox(height: 2),
+            Text(label, style: TextStyle(fontSize: 11, color: textMuted, fontWeight: FontWeight.w500)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuItem(IconData icon, String title, VoidCallback onTap) {
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: const BoxDecoration(color: Color(0xFFF1F5F9), shape: BoxShape.circle),
+        child: Icon(icon, color: primaryNavy, size: 20),
+      ),
+      title: Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textDark)),
+      trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8)),
+      onTap: onTap,
+    );
+  }
+}

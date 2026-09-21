@@ -13,6 +13,128 @@ class _TrackerScreenState extends State<TrackerScreen> {
   String _selectedFilter = "All";
   final List<String> _filters = const ["All", "In Progress", "Submitted", "Rejected"];
 
+  // --- UPDATE STATUS BOTTOM SHEET DIALOG ---
+  void _showUpdateStatusBottomSheet(BuildContext context) {
+    String selectedStatus = "Online Assessment";
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      backgroundColor: Colors.white,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                top: 20,
+                left: 20,
+                right: 20,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFCBD5E1),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "Update Application Status",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    "Select the current stage for this opportunity:",
+                    style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Options List
+                  ...["Applied", "Online Assessment", "Interview", "Offer Received", "Rejected"].map((status) {
+                    final isSelected = selectedStatus == status;
+                    return InkWell(
+                      onTap: () {
+                        setModalState(() {
+                          selectedStatus = status;
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: isSelected ? const Color(0xFFEEF2FF) : const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSelected ? const Color(0xFF4338CA) : const Color(0xFFE2E8F0),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              status,
+                              style: TextStyle(
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                color: isSelected ? const Color(0xFF4338CA) : const Color(0xFF334155),
+                              ),
+                            ),
+                            if (isSelected)
+                              const Icon(Icons.check_circle_rounded, color: Color(0xFF4338CA), size: 20),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1E1B4B),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        elevation: 0,
+                      ),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text("Status updated to '$selectedStatus'"),
+                            backgroundColor: const Color(0xFF1E1B4B),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                      child: const Text("Save Status", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -173,7 +295,10 @@ class _TrackerScreenState extends State<TrackerScreen> {
                                       ),
                                     ),
                                     const SizedBox(height: 6),
-                                    Row(
+                                    Wrap(
+                                      crossAxisAlignment: WrapCrossAlignment.center,
+                                      spacing: 8,
+                                      runSpacing: 4,
                                       children: [
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -191,7 +316,6 @@ class _TrackerScreenState extends State<TrackerScreen> {
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(width: 8),
                                         const Text(
                                           "• Applied: 15 May 2026",
                                           style: TextStyle(
@@ -317,7 +441,7 @@ class _TrackerScreenState extends State<TrackerScreen> {
                                   borderRadius: BorderRadius.circular(24),
                                 ),
                               ),
-                              onPressed: () {},
+                              onPressed: () => _showUpdateStatusBottomSheet(context),
                               child: const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [

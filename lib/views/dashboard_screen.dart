@@ -7,6 +7,7 @@ import 'opportunities_screen.dart';
 import 'skill_gap_screen.dart';
 import 'tracker_screen.dart';
 import 'learning_resources_screen.dart';
+import 'profile_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final String userId;
@@ -135,6 +136,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  void _navigateToProfile() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProfileScreen(userId: widget.userId),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -205,6 +215,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: isLoadingProfile
                   ? Center(child: CircularProgressIndicator(color: accentPurple))
                   : SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
                       padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
                       child: Center(
                         child: Container(
@@ -269,7 +280,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 crossAxisCount: 2,
                                 crossAxisSpacing: 12,
                                 mainAxisSpacing: 12,
-                                childAspectRatio: 1.55,
+                                childAspectRatio: 1.35,
                                 children: [
                                   _buildFeatureCard(
                                     title: "Opportunities",
@@ -290,7 +301,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     },
                                   ),
                                   _buildFeatureCard(
-                                    title: "Learning\nResources",
+                                    title: "Learning Resources",
                                     icon: Icons.menu_book_rounded,
                                     bgColor: const Color(0xFFF1F5F9),
                                     iconBgColor: Colors.white,
@@ -298,7 +309,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     onTap: _navigateToLearningResources,
                                   ),
                                   _buildFeatureCard(
-                                    title: "Application\nTracker",
+                                    title: "Application Tracker",
                                     icon: Icons.show_chart_rounded,
                                     bgColor: const Color(0xFFF1F5F9),
                                     iconBgColor: Colors.white,
@@ -448,23 +459,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
 
             // --- BOTTOM NAVIGATION BAR ---
-            Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildNavItem(0, Icons.home_rounded, "Home"),
-                  _buildNavItem(1, Icons.explore_outlined, "Explore", onTap: _navigateToOpportunities),
-                  _buildNavItem(2, Icons.menu_book_outlined, "Learn", onTap: _navigateToLearningResources),
-                  _buildNavItem(3, Icons.show_chart_rounded, "Tracker", onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => TrackerScreen(userId: widget.userId)));
-                  }),
-                  _buildNavItem(4, Icons.person_outline_rounded, "Profile", onTap: _handleLogout),
-                ],
+            SafeArea(
+              top: false,
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildNavItem(0, Icons.home_rounded, "Home"),
+                    _buildNavItem(1, Icons.explore_outlined, "Explore", onTap: _navigateToOpportunities),
+                    _buildNavItem(2, Icons.menu_book_outlined, "Learn", onTap: _navigateToLearningResources),
+                    _buildNavItem(3, Icons.show_chart_rounded, "Tracker", onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => TrackerScreen(userId: widget.userId)));
+                    }),
+                    _buildNavItem(4, Icons.person_outline_rounded, "Profile", onTap: _navigateToProfile),
+                  ],
+                ),
               ),
             ),
           ],
@@ -484,7 +498,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(20)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -495,7 +509,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
               decoration: BoxDecoration(color: iconBgColor, shape: BoxShape.circle),
               child: Icon(icon, color: iconColor, size: 20),
             ),
-            Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textDark, height: 1.2)),
+            Text(
+              title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: textDark,
+                height: 1.15,
+              ),
+            ),
           ],
         ),
       ),
@@ -558,14 +582,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
         if (onTap != null) onTap();
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: isSelected ? BoxDecoration(color: const Color(0xFFEEF2FF), borderRadius: BorderRadius.circular(20)) : null,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: isSelected ? accentPurple : const Color(0xFF64748B), size: 22),
+            Icon(icon, color: isSelected ? accentPurple : const Color(0xFF64748B), size: 20),
             const SizedBox(height: 2),
-            Text(label, style: TextStyle(fontSize: 11, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? accentPurple : const Color(0xFF64748B))),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected ? accentPurple : const Color(0xFF64748B),
+              ),
+            ),
           ],
         ),
       ),
