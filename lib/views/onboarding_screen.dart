@@ -7,7 +7,9 @@ import '../providers/onboarding_provider.dart';
 import 'dashboard_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({super.key});
+  final String? userId; // <-- Added optional userId parameter
+
+  const OnboardingScreen({super.key, this.userId}); // <-- Updated constructor
 
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
@@ -64,7 +66,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget build(BuildContext context) {
     final provider = Provider.of<OnboardingProvider>(context);
     final user = Supabase.instance.client.auth.currentUser;
-    final userId = user?.id ?? "11111111-1111-1111-1111-111111111111";
+    // Priority to passed widget.userId, fallback to active Supabase auth user, or default UUID
+    final effectiveUserId = widget.userId ?? user?.id ?? "11111111-1111-1111-1111-111111111111";
 
     return Scaffold(
       backgroundColor: bgLight,
@@ -482,14 +485,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                   } else {
                                     setState(() => isSubmitting = true);
                                     // Save profile details to database
-                                    bool ok = await provider.submitProfile(userId, imageBytes: _selectedImageBytes);
+                                    bool ok = await provider.submitProfile(effectiveUserId, imageBytes: _selectedImageBytes);
                                     setState(() => isSubmitting = false);
                                     if (ok && mounted) {
                                       Navigator.pushReplacement(
                                         context,
                                         MaterialPageRoute(
                                           builder: (context) => DashboardScreen(
-                                            userId: userId,
+                                            userId: effectiveUserId,
                                           ),
                                         ),
                                       );

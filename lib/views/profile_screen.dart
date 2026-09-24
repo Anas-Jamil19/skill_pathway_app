@@ -15,10 +15,13 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool isLoading = true;
+  bool isSaving = false;
 
   String fullName = "Anas Jamil";
   String careerGoal = "Flutter Developer";
   String email = "";
+  String phone = "+92 300 1234567";
+  String university = "Dawood University of Engineering and Technology";
   Uint8List? avatarBytes;
   String? avatarUrl;
 
@@ -37,7 +40,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final supabase = Supabase.instance.client;
       final authUser = supabase.auth.currentUser;
-      email = authUser?.email ?? "";
+      email = authUser?.email ?? "anasjamil2k25@gmail.com";
 
       final response = await supabase
           .from('profiles')
@@ -49,6 +52,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         setState(() {
           fullName = response['full_name'] ?? authUser?.userMetadata?['full_name'] ?? "Anas Jamil";
           careerGoal = response['career_goal'] ?? "Flutter Developer";
+          phone = response['phone'] ?? "+92 300 1234567";
+          university = response['university'] ?? "Dawood University of Engineering and Technology";
 
           if (response['avatar_url'] != null && response['avatar_url'].toString().isNotEmpty) {
             final String rawAvatar = response['avatar_url'].toString();
@@ -71,13 +76,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  // --- LOGOUT DIALOG ---
   void _handleLogout() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text("Logout", style: TextStyle(fontWeight: FontWeight.bold, color: textDark)),
-        content: Text("Are you sure you want to sign out?", style: TextStyle(color: textMuted)),
+        content: Text("Are you sure you want to sign out of Skill Pathway?", style: TextStyle(color: textMuted)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -108,88 +114,256 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // --- EDIT PROFILE / PERSONAL INFO MODAL ---
   void _showEditProfileDialog() {
     final nameController = TextEditingController(text: fullName);
     final goalController = TextEditingController(text: careerGoal);
+    final phoneController = TextEditingController(text: phone);
+    final universityController = TextEditingController(text: university);
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       backgroundColor: Colors.white,
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          top: 20,
-          left: 20,
-          right: 20,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Padding(
+          padding: EdgeInsets.only(
+            top: 20,
+            left: 20,
+            right: 20,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(color: const Color(0xFFCBD5E1), borderRadius: BorderRadius.circular(2)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text("Edit Personal Information", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textDark)),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: "Full Name",
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: goalController,
+                  decoration: InputDecoration(
+                    labelText: "Target Career Goal",
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: phoneController,
+                  decoration: InputDecoration(
+                    labelText: "Phone Number",
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: universityController,
+                  decoration: InputDecoration(
+                    labelText: "University / Institution",
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryNavy,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    onPressed: isSaving
+                        ? null
+                        : () async {
+                            setModalState(() => isSaving = true);
+                            final newName = nameController.text.trim();
+                            final newGoal = goalController.text.trim();
+                            final newPhone = phoneController.text.trim();
+                            final newUni = universityController.text.trim();
+
+                            try {
+                              await Supabase.instance.client
+                                  .from('profiles')
+                                  .update({
+                                    'full_name': newName,
+                                    'career_goal': newGoal,
+                                    'phone': newPhone,
+                                    'university': newUni,
+                                  })
+                                  .eq('id', widget.userId);
+
+                              setState(() {
+                                fullName = newName;
+                                careerGoal = newGoal;
+                                phone = newPhone;
+                                university = newUni;
+                              });
+
+                              if (mounted) {
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text("Profile updated successfully!")),
+                                );
+                              }
+                            } catch (e) {
+                              debugPrint("Error updating profile: $e");
+                            } finally {
+                              if (mounted) setModalState(() => isSaving = false);
+                            }
+                          },
+                    child: isSaving
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Text("Save Changes", style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
+      ),
+    );
+  }
+
+  // --- RESUME / CV DIALOG ---
+  void _showResumeDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.description_outlined, color: accentPurple),
+            const SizedBox(width: 8),
+            const Text("My Resume / CV"),
+          ],
+        ),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Status: ATS Optimized & Updated"),
+            SizedBox(height: 8),
+            Text("Primary Stack: Flutter, Dart, Supabase, Git", style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Close"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: primaryNavy, foregroundColor: Colors.white),
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Resume download / view feature triggered")),
+              );
+            },
+            child: const Text("View Full CV"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- SAVED OPPORTUNITIES BOTTOM SHEET ---
+  void _showSavedOpportunitiesDialog() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      backgroundColor: Colors.white,
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(color: const Color(0xFFCBD5E1), borderRadius: BorderRadius.circular(2)),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text("Edit Profile Details", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textDark)),
-            const SizedBox(height: 16),
-            TextField(
-              controller: nameController,
-              decoration: InputDecoration(
-                labelText: "Full Name",
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
+            Text("Saved Opportunities", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textDark)),
             const SizedBox(height: 12),
-            TextField(
-              controller: goalController,
-              decoration: InputDecoration(
-                labelText: "Target Career Goal",
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
+            _buildSavedItem("Junior Flutter Developer", "TechWave Solutions Inc. • 92% Match"),
+            const SizedBox(height: 8),
+            _buildSavedItem("Mobile App Intern", "InnoDev Studios • 88% Match"),
             const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryNavy,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                ),
-                onPressed: () async {
-                  final newName = nameController.text.trim();
-                  final newGoal = goalController.text.trim();
+          ],
+        ),
+      ),
+    );
+  }
 
-                  if (newName.isNotEmpty) {
-                    try {
-                      await Supabase.instance.client
-                          .from('profiles')
-                          .update({'full_name': newName, 'career_goal': newGoal})
-                          .eq('id', widget.userId);
+  Widget _buildSavedItem(String title, String subtitle) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: textDark, fontSize: 14)),
+              const SizedBox(height: 2),
+              Text(subtitle, style: TextStyle(color: textMuted, fontSize: 12)),
+            ],
+          ),
+          const Icon(Icons.bookmark, color: Color(0xFF4338CA), size: 20),
+        ],
+      ),
+    );
+  }
 
-                      setState(() {
-                        fullName = newName;
-                        careerGoal = newGoal;
-                      });
-
-                      if (mounted) Navigator.pop(context);
-                    } catch (e) {
-                      debugPrint("Update profile error: $e");
-                    }
-                  }
-                },
-                child: const Text("Save Changes", style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
+  // --- SETTINGS DIALOG ---
+  void _showSettingsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text("Settings & Preferences"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SwitchListTile(
+              title: const Text("Push Notifications"),
+              value: true,
+              activeThumbColor: accentPurple,
+              onChanged: (val) {},
+            ),
+            SwitchListTile(
+              title: const Text("Dark Theme (Auto)"),
+              value: false,
+              activeThumbColor: accentPurple,
+              onChanged: (val) {},
             ),
           ],
         ),
+        actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: primaryNavy, foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Done"),
+          ),
+        ],
       ),
     );
   }
@@ -241,10 +415,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Text(fullName, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textDark)),
                             const SizedBox(height: 2),
                             Text(careerGoal, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: accentPurple)),
-                            if (email.isNotEmpty) ...[
-                              const SizedBox(height: 4),
-                              Text(email, style: TextStyle(fontSize: 13, color: textMuted)),
-                            ],
+                            const SizedBox(height: 2),
+                            Text(email, style: TextStyle(fontSize: 13, color: textMuted)),
                             const SizedBox(height: 16),
                             OutlinedButton.icon(
                               onPressed: _showEditProfileDialog,
@@ -286,26 +458,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           children: [
                             _buildMenuItem(Icons.person_outline_rounded, "Personal Information", _showEditProfileDialog),
                             const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                            _buildMenuItem(Icons.description_outlined, "My Resume / CV", () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text("Resume section opens")),
-                              );
-                            }),
+                            _buildMenuItem(Icons.description_outlined, "My Resume / CV", _showResumeDialog),
                             const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                            _buildMenuItem(Icons.bookmark_outline_rounded, "Saved Opportunities", () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text("Saved items list")),
-                              );
-                            }),
+                            _buildMenuItem(Icons.bookmark_outline_rounded, "Saved Opportunities", _showSavedOpportunitiesDialog),
                             const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                            _buildMenuItem(Icons.settings_outlined, "Settings & Preferences", () {}),
+                            _buildMenuItem(Icons.settings_outlined, "Settings & Preferences", _showSettingsDialog),
                           ],
                         ),
                       ),
 
                       const SizedBox(height: 24),
 
-                      // --- LOGOUT BUTTON ---
+                      // --- SIGN OUT BUTTON ---
                       SizedBox(
                         width: double.infinity,
                         height: 48,

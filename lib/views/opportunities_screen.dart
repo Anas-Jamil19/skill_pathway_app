@@ -1,7 +1,4 @@
-import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'opportunity_detail_screen.dart';
 
 class OpportunitiesScreen extends StatefulWidget {
@@ -16,8 +13,6 @@ class OpportunitiesScreen extends StatefulWidget {
 class _OpportunitiesScreenState extends State<OpportunitiesScreen> {
   String selectedFilter = 'All';
   String searchQuery = '';
-  Uint8List? userAvatarBytes;
-  String? avatarUrl;
 
   final Color primaryNavy = const Color(0xFF1E1B4B);
   final Color accentPurple = const Color(0xFF4F46E5);
@@ -84,33 +79,6 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen> {
   ];
 
   @override
-  void initState() {
-    super.initState();
-    _fetchUserAvatar();
-  }
-
-  Future<void> _fetchUserAvatar() async {
-    try {
-      final response = await Supabase.instance.client
-          .from('profiles')
-          .select('avatar_url')
-          .eq('id', widget.userId)
-          .maybeSingle();
-
-      if (response != null && response['avatar_url'] != null) {
-        final String rawAvatar = response['avatar_url'].toString();
-        if (rawAvatar.startsWith('http')) {
-          setState(() => avatarUrl = rawAvatar);
-        } else {
-          setState(() => userAvatarBytes = base64Decode(rawAvatar));
-        }
-      }
-    } catch (e) {
-      debugPrint("Error loading avatar: $e");
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
     final filteredOpportunities = opportunitiesList.where((item) {
       final matchesFilter = selectedFilter == 'All' ||
@@ -135,37 +103,27 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header Bar
+            // Header Bar (Avatar Removed for Clean Look)
             Padding(
               padding:
                   const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Icon(Icons.school_outlined, color: primaryNavy, size: 28),
-                      const SizedBox(width: 8),
-                      Text(
-                        "Skill Pathway",
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: primaryNavy,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                    ],
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Color(0xFF1E293B)),
+                    onPressed: () => Navigator.pop(context),
                   ),
-                  CircleAvatar(
-                    radius: 18,
-                    backgroundColor: const Color(0xFFE2E8F0),
-                    backgroundImage: userAvatarBytes != null
-                        ? MemoryImage(userAvatarBytes!)
-                        : (avatarUrl != null
-                            ? NetworkImage(avatarUrl!)
-                            : const NetworkImage(
-                                'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150')) as ImageProvider,
+                  const SizedBox(width: 4),
+                  Icon(Icons.school_outlined, color: primaryNavy, size: 28),
+                  const SizedBox(width: 8),
+                  Text(
+                    "Skill Pathway",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: primaryNavy,
+                      letterSpacing: -0.5,
+                    ),
                   ),
                 ],
               ),

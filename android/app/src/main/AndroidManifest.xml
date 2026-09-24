@@ -1,8 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="skill_pathway_app"
-        android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+    android:label="Skill Pathway"
+    android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
             android:exported="true"

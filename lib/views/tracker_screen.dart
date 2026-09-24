@@ -13,9 +13,73 @@ class _TrackerScreenState extends State<TrackerScreen> {
   String _selectedFilter = "All";
   final List<String> _filters = const ["All", "In Progress", "Submitted", "Rejected"];
 
-  // --- UPDATE STATUS BOTTOM SHEET DIALOG ---
-  void _showUpdateStatusBottomSheet(BuildContext context) {
-    String selectedStatus = "Online Assessment";
+  // --- DYNAMIC APPLICATION DATA LIST ---
+  final List<Map<String, dynamic>> _applications = [
+    {
+      "id": "1",
+      "company": "Google",
+      "logoText": "G",
+      "logoColor": const Color(0xFF4285F4),
+      "title": "Google STEP Internship 2025",
+      "status": "In Progress",
+      "appliedDate": "15 May 2026",
+      "nextStep": "Online Assessment",
+      "completedSteps": "2/4 Completed",
+      "progress": 0.5,
+      "note": "Note: Update resume with latest Flutter project before assessment.",
+      "timeline": [
+        {"title": "Applied", "subtitle": "Application submitted successfully.", "isCompleted": true, "isCurrent": false},
+        {"title": "Online Assessment", "subtitle": "Pending invitation email.", "isCompleted": false, "isCurrent": true},
+        {"title": "Interview", "subtitle": "", "isCompleted": false, "isCurrent": false},
+      ]
+    },
+    {
+      "id": "2",
+      "company": "DAAD",
+      "logoText": "D",
+      "logoColor": const Color(0xFF0284C7),
+      "title": "DAAD Scholarship 2026",
+      "status": "Submitted",
+      "appliedDate": "10 May 2026",
+      "nextStep": "Under Review",
+      "completedSteps": "1/3 Completed",
+      "progress": 0.33,
+      "note": "Note: Document verification in progress.",
+      "timeline": [
+        {"title": "Applied", "subtitle": "Submitted via portal.", "isCompleted": true, "isCurrent": false},
+        {"title": "Under Review", "subtitle": "Reviewing by committee.", "isCompleted": false, "isCurrent": true},
+      ]
+    },
+    {
+      "id": "3",
+      "company": "Microsoft",
+      "logoText": "M",
+      "logoColor": const Color(0xFF00A4EF),
+      "title": "Microsoft Student Ambassador",
+      "status": "Rejected",
+      "appliedDate": "01 Apr 2026",
+      "nextStep": "Application Closed",
+      "completedSteps": "3/3 Completed",
+      "progress": 1.0,
+      "note": "Note: Re-apply in the next cohort next year.",
+      "timeline": [
+        {"title": "Applied", "subtitle": "Submitted video task.", "isCompleted": true, "isCurrent": false},
+        {"title": "Final Decision", "subtitle": "Not selected this cycle.", "isCompleted": true, "isCurrent": true},
+      ]
+    },
+  ];
+
+  // --- FILTERED LIST LOGIC ---
+  List<Map<String, dynamic>> get _filteredApplications {
+    if (_selectedFilter == "All") {
+      return _applications;
+    }
+    return _applications.where((app) => app["status"] == _selectedFilter).toList();
+  }
+
+  // --- UPDATE STATUS DIALOG ---
+  void _showUpdateStatusBottomSheet(BuildContext context, Map<String, dynamic> appItem) {
+    String selectedStatus = appItem["status"];
 
     showModalBottomSheet(
       context: context,
@@ -49,10 +113,10 @@ class _TrackerScreenState extends State<TrackerScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    "Update Application Status",
-                    style: TextStyle(
-                      fontSize: 18,
+                  Text(
+                    "Update Status: ${appItem["title"]}",
+                    style: const TextStyle(
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF0F172A),
                     ),
@@ -64,8 +128,8 @@ class _TrackerScreenState extends State<TrackerScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Options List
-                  ...["Applied", "Online Assessment", "Interview", "Offer Received", "Rejected"].map((status) {
+                  // Options
+                  ...["In Progress", "Submitted", "Rejected"].map((status) {
                     final isSelected = selectedStatus == status;
                     return InkWell(
                       onTap: () {
@@ -114,6 +178,9 @@ class _TrackerScreenState extends State<TrackerScreen> {
                         elevation: 0,
                       ),
                       onPressed: () {
+                        setState(() {
+                          appItem["status"] = selectedStatus;
+                        });
                         Navigator.pop(context);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
@@ -137,6 +204,8 @@ class _TrackerScreenState extends State<TrackerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final displayedList = _filteredApplications;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
@@ -162,13 +231,6 @@ class _TrackerScreenState extends State<TrackerScreen> {
           ],
         ),
         centerTitle: true,
-        actions: const [
-          CircleAvatar(
-            radius: 16,
-            backgroundImage: NetworkImage('https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'),
-          ),
-          SizedBox(width: 16),
-        ],
       ),
       body: Align(
         alignment: Alignment.topCenter,
@@ -181,7 +243,6 @@ class _TrackerScreenState extends State<TrackerScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Header Title
                     const Text(
                       "Application Tracker",
                       style: TextStyle(
@@ -203,7 +264,7 @@ class _TrackerScreenState extends State<TrackerScreen> {
 
                     const SizedBox(height: 20),
 
-                    // Horizontal Filter Pills
+                    // --- FUNCTIONAL HORIZONTAL FILTER PILLS ---
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
@@ -242,390 +303,28 @@ class _TrackerScreenState extends State<TrackerScreen> {
 
                     const SizedBox(height: 20),
 
-                    // CARD 1: Google STEP Internship 2025
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFF4338CA), width: 1.5),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF4338CA).withOpacity(0.04),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                width: 44,
-                                height: 44,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFF1F5F9),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Center(
-                                  child: Text(
-                                    "G",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 20,
-                                      color: Color(0xFF4285F4),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      "Google STEP Internship 2025",
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF0F172A),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Wrap(
-                                      crossAxisAlignment: WrapCrossAlignment.center,
-                                      spacing: 8,
-                                      runSpacing: 4,
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFEEF2FF),
-                                            borderRadius: BorderRadius.circular(6),
-                                          ),
-                                          child: const Text(
-                                            "IN PROGRESS",
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold,
-                                              color: Color(0xFF4338CA),
-                                              letterSpacing: 0.5,
-                                            ),
-                                          ),
-                                        ),
-                                        const Text(
-                                          "• Applied: 15 May 2026",
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Color(0xFF64748B),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const Icon(Icons.more_vert, color: Color(0xFF94A3B8), size: 20),
-                            ],
-                          ),
-
-                          const SizedBox(height: 18),
-
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF8FAFC),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                    // --- APPLICATION CARDS LIST ---
+                    if (displayedList.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(32),
+                        alignment: Alignment.center,
+                        child: Column(
+                          children: [
+                            const Icon(Icons.folder_open_rounded, size: 48, color: Color(0xFF94A3B8)),
+                            const SizedBox(height: 12),
+                            Text(
+                              "No applications in '$_selectedFilter'",
+                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
                             ),
-                            child: Column(
-                              children: [
-                                const Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      "Next: Online Assessment",
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xFF334155),
-                                      ),
-                                    ),
-                                    Text(
-                                      "2/4 Completed",
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF1E1B4B),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: const LinearProgressIndicator(
-                                    value: 0.5,
-                                    backgroundColor: Color(0xFFE2E8F0),
-                                    color: Color(0xFF1E1B4B),
-                                    minHeight: 6,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          _buildTimelineStep(
-                            title: "Applied",
-                            subtitle: "Application submitted successfully.",
-                            isCompleted: true,
-                            isCurrent: false,
-                          ),
-                          _buildTimelineStep(
-                            title: "Online Assessment",
-                            subtitle: "Pending invitation email.",
-                            isCompleted: false,
-                            isCurrent: true,
-                          ),
-                          _buildTimelineStep(
-                            title: "Interview",
-                            subtitle: "",
-                            isCompleted: false,
-                            isCurrent: false,
-                            isLast: true,
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          Container(
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF1F5F9),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: const Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Icon(Icons.edit_note_rounded, color: Color(0xFF64748B), size: 20),
-                                SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    "Note: Update resume with latest Flutter project before assessment.",
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontStyle: FontStyle.italic,
-                                      color: Color(0xFF334155),
-                                      height: 1.4,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          SizedBox(
-                            width: double.infinity,
-                            height: 46,
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                backgroundColor: const Color(0xFFF1F5F9),
-                                side: BorderSide.none,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(24),
-                                ),
-                              ),
-                              onPressed: () => _showUpdateStatusBottomSheet(context),
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    "Update Status",
-                                    style: TextStyle(
-                                      color: Color(0xFF334155),
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  SizedBox(width: 6),
-                                  Icon(Icons.arrow_drop_down, color: Color(0xFF334155)),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // CARD 2: DAAD Scholarship 2026
-                    Container(
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                width: 44,
-                                height: 44,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFF1F5F9),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(Icons.school_outlined, color: Color(0xFF475569), size: 22),
-                              ),
-                              const SizedBox(width: 12),
-                              const Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      "DAAD Scholarship 2026",
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF0F172A),
-                                      ),
-                                    ),
-                                    SizedBox(height: 6),
-                                    Text(
-                                      "Deadline: 30 Nov 2026",
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: Color(0xFF64748B),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFE2E8F0),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: const Text(
-                                  "NOT STARTED",
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF475569),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-                          GestureDetector(
-                            onTap: () {},
-                            child: const Row(
-                              children: [
-                                Text(
-                                  "Start Application",
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF3822D6),
-                                  ),
-                                ),
-                                SizedBox(width: 4),
-                                Icon(Icons.arrow_forward_rounded, size: 14, color: Color(0xFF3822D6)),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // CARD 3: Microsoft Learn Student Ambassador
-                    Container(
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 44,
-                            height: 44,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFF1F5F9),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Center(
-                              child: Icon(Icons.window_rounded, color: Color(0xFF00A4EF), size: 22),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Microsoft Learn Student Ambassador",
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF0F172A),
-                                  ),
-                                ),
-                                SizedBox(height: 6),
-                                Text(
-                                  "Applied: 10 May 2026",
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Color(0xFF64748B),
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  "Next: Under Review",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xFF64748B),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEEF2FF),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Text(
-                              "SUBMITTED",
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF4338CA),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                          ],
+                        ),
+                      )
+                    else
+                      for (final item in displayedList) ...[
+                        _buildApplicationCard(item),
+                        const SizedBox(height: 16),
+                      ],
 
                     const SizedBox(height: 80),
                   ],
@@ -640,13 +339,234 @@ class _TrackerScreenState extends State<TrackerScreen> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  onPressed: () {},
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Add new application modal triggered")),
+                    );
+                  },
                   child: const Icon(Icons.add, color: Colors.white, size: 28),
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildApplicationCard(Map<String, dynamic> item) {
+    Color statusBg = const Color(0xFFEEF2FF);
+    Color statusText = const Color(0xFF4338CA);
+
+    if (item["status"] == "Rejected") {
+      statusBg = const Color(0xFFFEF2F2);
+      statusText = const Color(0xFFEF4444);
+    } else if (item["status"] == "Submitted") {
+      statusBg = const Color(0xFFF1F5F9);
+      statusText = const Color(0xFF334155);
+    }
+
+    final List timelineList = item["timeline"] ?? [];
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF1F5F9),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    item["logoText"],
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                      color: item["logoColor"],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item["title"],
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: statusBg,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            (item["status"] as String).toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: statusText,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          "• Applied: ${item["appliedDate"]}",
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 18),
+
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Next: ${item["nextStep"]}",
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF334155),
+                      ),
+                    ),
+                    Text(
+                      item["completedSteps"],
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E1B4B),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: item["progress"],
+                    backgroundColor: const Color(0xFFE2E8F0),
+                    color: const Color(0xFF1E1B4B),
+                    minHeight: 6,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Timeline steps
+          for (int i = 0; i < timelineList.length; i++)
+            _buildTimelineStep(
+              title: timelineList[i]["title"],
+              subtitle: timelineList[i]["subtitle"],
+              isCompleted: timelineList[i]["isCompleted"],
+              isCurrent: timelineList[i]["isCurrent"],
+              isLast: i == timelineList.length - 1,
+            ),
+
+          const SizedBox(height: 16),
+
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.edit_note_rounded, color: Color(0xFF64748B), size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    item["note"],
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontStyle: FontStyle.italic,
+                      color: Color(0xFF334155),
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                backgroundColor: const Color(0xFFF1F5F9),
+                side: BorderSide.none,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+              ),
+              onPressed: () => _showUpdateStatusBottomSheet(context, item),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "Update Status",
+                    style: TextStyle(
+                      color: Color(0xFF334155),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  SizedBox(width: 6),
+                  Icon(Icons.arrow_drop_down, color: Color(0xFF334155)),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
